@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fraud Detection Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Arial; }
+        body {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            padding: 0; margin:0;
+        }
+        .container {
+            width: 95%;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        header {
+            background: #4a6fc0;
+            color: #fff;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; justify-content:center; }
+        .stat { flex:1 1 200px; background:#f8f9fa; padding:12px; border-radius:8px; text-align:center; }
+        .stat .value { font-size:22px; color:#4a6fc0; font-weight:700; }
+        .charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap:20px; }
+        .chart { background:#fff; padding:12px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.06); min-height:450px; }
+        img.chart-img { width:100%; height:100%; object-fit:contain; border-radius:8px; }
+        @media(max-width:1200px){ .charts{grid-template-columns:1fr 1fr;} }
+        @media(max-width:768px){ .charts{grid-template-columns:1fr;} .stats{flex-direction:column; align-items:center;} .chart{min-height:300px;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fraud Detection Dashboard</h1>
+            <p>Analytics & insights from transaction monitoring</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat"><div class="value">{{ total_transactions }}</div><div class="label">Total Transactions</div></div>
+            <div class="stat"><div class="value">{{ total_fraud }}</div><div class="label">Fraudulent Transactions</div></div>
+            <div class="stat"><div class="value">{{ "%.2f"|format(fraud_rates) }}%</div><div class="label">Overall Fraud Rate</div></div>
+        </div>
+
+        <div class="charts">
+            <!-- Interactive Charts -->
+            {% for graphJSON in graphsJSON %}
+                <div class="chart"><div id="chart{{ loop.index }}"></div></div>
+            {% endfor %}
+
+            <!-- Static Charts -->
+            {% for img in staticGraphs %}
+                <div class="chart"><img class="chart-img" src="{{ img }}"></div>
+            {% endfor %}
+        </div>
+
+        <script>
+            {% for graphJSON in graphsJSON %}
+                var g = {{ graphJSON | safe }};
+                Plotly.newPlot('chart{{ loop.index }}', g.data, g.layout, {responsive:true});
+            {% endfor %}
+        </script>
+          <p style="margin-top:12px;font-size:13px;"><a href="/">← Go back to Prediction</a></p>
+    </div>
+</body>
+</html>

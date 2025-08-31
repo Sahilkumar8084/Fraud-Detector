@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Fraud Detection — Predict</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            min-height: 100vh;
+            padding: 30px;
+            color: #222;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        h1 { margin-bottom: 8px; color:#333; }
+        form { display: grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
+        label { font-size: 13px; color:#555; }
+        input, select { padding:8px 10px; border-radius:6px; border:1px solid #ddd; width:100%; }
+        .full { grid-column: 1 / -1; }
+        button {
+            padding:10px 16px; border-radius:8px; border:0; background:#4a6fc0; color:white; cursor:pointer;
+        }
+        .result { margin-top:18px; padding:12px; border-radius:8px; background:#f6f8ff; }
+        .shap-img { max-width:100%; margin-top:12px; border-radius:8px; border:1px solid #eee; }
+        .small { font-size: 13px; color:#666 }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fraud Prediction</h1>
+        <p class="small">Fill transaction fields and click Predict</p>
+
+        {% if error %}
+            <div class="result" style="background:#ffe8e8;color:#900;">
+                <strong>Error:</strong> {{ error }}
+                {% if traceback %}
+                    <pre style="white-space:pre-wrap; margin-top:8px;">{{ traceback }}</pre>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <form method="post" action="/predict">
+            <div>
+                <label>Step (time step)</label>
+                <input type="number" name="step" step="1" value="{{ form_data.step if form_data is defined else 1 }}">
+            </div>
+
+            <div>
+                <label>Amount</label>
+                <input type="number" name="amount" step="0.01" value="{{ form_data.amount if form_data is defined else 0 }}">
+            </div>
+
+            <div>
+                <label>Old Balance (origin)</label>
+                <input type="number" name="oldbalance_org" step="0.01" value="{{ form_data.oldbalance_org if form_data is defined else 0 }}">
+            </div>
+
+            <div>
+                <label>New Balance (origin)</label>
+                <input type="number" name="newbalance_orig" step="0.01" value="{{ form_data.newbalance_orig if form_data is defined else 0 }}">
+            </div>
+
+            <div>
+                <label>Old Balance (dest)</label>
+                <input type="number" name="oldbalance_dest" step="0.01" value="{{ form_data.oldbalance_dest if form_data is defined else 0 }}">
+            </div>
+
+            <div>
+                <label>New Balance (dest)</label>
+                <input type="number" name="newbalance_dest" step="0.01" value="{{ form_data.newbalance_dest if form_data is defined else 0 }}">
+            </div>
+
+            <div>
+                <label>Transaction Type</label>
+                <select name="type">
+                    <option value="TRANSFER" {% if form_data and form_data.type=='TRANSFER' %}selected{% endif %}>TRANSFER</option>
+                    <option value="CASH_OUT" {% if form_data and form_data.type=='CASH_OUT' %}selected{% endif %}>CASH_OUT</option>
+                    <option value="CASH_IN" {% if form_data and form_data.type=='CASH_IN' %}selected{% endif %}>CASH_IN</option>
+                    <option value="DEBIT" {% if form_data and form_data.type=='DEBIT' %}selected{% endif %}>DEBIT</option>
+                    <option value="PAYMENT" {% if form_data and form_data.type=='PAYMENT' %}selected{% endif %}>PAYMENT</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Name Origin (eg M123)</label>
+                <input type="text" name="name_orig" value="{{ form_data.name_orig if form_data is defined else 'U' }}">
+            </div>
+
+            <div>
+                <label>Name Dest (eg C456)</label>
+                <input type="text" name="name_dest" value="{{ form_data.name_dest if form_data is defined else 'U' }}">
+            </div>
+
+            <div class="full">
+                <button type="submit">Predict</button>
+            </div>
+        </form>
+
+        {% if result %}
+            <div class="result">
+                <h3>Prediction</h3>
+                <p><strong>Is Fraud:</strong> {{ 'Yes' if result.is_fraud else 'No' }}</p>
+                <p><strong>Predicted Label:</strong> {{ result.prediction }}</p>
+                <p><strong>Fraud Probability:</strong> {{ (result.fraud_probability * 100) | round(2) }}%</p>
+                <p><strong>Legit Probability:</strong> {{ (result.legit_probability * 100) | round(2) }}%</p>
+
+                {% if result.feature_importance %}
+                    <h4>Top Feature Importance</h4>
+                    <ul>
+                        {% for it in result.feature_importance[:6] %}
+                            <li>{{ it.feature }} &mdash; {{ it.shap_value | round(5) }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if result.shap_plot %}
+                    <h4>SHAP explanation</h4>
+                    <img class="shap-img" src="{{ result.shap_plot }}" alt="SHAP plot">
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <p style="margin-top:12px;font-size:13px;"><a href="/dashboard">Go to Dashboard →</a></p>
+    </div>
+</body>
+</html>
